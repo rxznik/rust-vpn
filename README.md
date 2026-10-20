@@ -1,4 +1,4 @@
-# rustvpn
+# <img src="logo.svg" alt="rustvpn" width="40"> RUST VPN
 
 Настольный VPN-клиент, совместимый с подписками Happ. Датаплан — бинарник Xray-core. Туннель TUN поднимает tun2proxy, не sing-box. Приложения для iOS и Android в этот релиз не входят.
 
