@@ -1,0 +1,400 @@
+import { FilledButton, MaterialPalette, ScrollView, TextButton } from "@material";
+import { AcceptField, LiveField } from "components.slint";
+
+export struct SubLine {
+    id: string,
+    name: string,
+    detail: string,
+    has-url: bool,
+    can-delete: bool,
+    support: bool,
+}
+
+export struct GroupLine {
+    id: string,
+    name: string,
+    detail: string,
+    open: bool,
+}
+
+export struct MemberLine {
+    id: string,
+    name: string,
+    inside: bool,
+}
+
+export component ListsPage inherits Rectangle {
+    in property <[SubLine]> subscriptions;
+    in property <[GroupLine]> groups;
+    in property <[MemberLine]> members;
+    in property <[MemberLine]> candidates;
+    in property <bool> picker;
+    in property <int> add-page;
+    in property <int> add-pages;
+    in property <string> add-empty;
+    in property <int> draft-token;
+    in property <string> notice;
+    in property <bool> notice-bad;
+    callback sub-refresh(string);
+    callback sub-ping(string);
+    callback sub-fastest(string);
+    callback sub-rename(string, string);
+    callback sub-delete(string);
+    callback sub-support(string);
+    callback group-create(string);
+    callback group-rename(string, string);
+    callback group-delete(string);
+    callback group-toggle(string);
+    callback member-set(string, bool);
+    callback member-filter(string);
+    callback picker-toggle();
+    callback add-step(int);
+
+    sheet := ScrollView {
+        x: 0;
+        y: 0;
+        width: 100%;
+        height: 100%;
+        vertical-scrollbar-policy: as-needed;
+        horizontal-scrollbar-policy: always-off;
+        content-height: body.preferred-height;
+        content-width: sheet.visible-width;
+
+        body := VerticalLayout {
+            x: 0px;
+            y: 0px;
+            width: sheet.visible-width;
+            vertical-stretch: 0;
+            padding: 16px;
+            spacing: 12px;
+            alignment: start;
+
+            Text {
+                text: "Подписки";
+                color: MaterialPalette.on-surface;
+                font-size: (18px / 12px) * 1rem;
+                font-weight: 600;
+            }
+
+            for line in root.subscriptions: Rectangle {
+                vertical-stretch: 0;
+                border-radius: 16px;
+                background: MaterialPalette.surface;
+                border-width: 1px;
+                border-color: MaterialPalette.outline-variant;
+
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    Text {
+                        text: line.name;
+                        color: MaterialPalette.on-surface;
+                        font-size: (16px / 12px) * 1rem;
+                        font-weight: 700;
+                        wrap: word-wrap;
+                        horizontal-alignment: left;
+                    }
+
+                    Text {
+                        text: line.detail;
+                        color: MaterialPalette.on-surface-variant;
+                        font-size: (12px / 12px) * 1rem;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+
+                    LiveField {
+                        label: "Имя";
+                        row-id: line.id;
+                        saved: line.name;
+                        commit(value) => {
+                            root.sub-rename(line.id, value);
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+
+                        if line.has-url: TextButton {
+                            text: "Обновить";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.sub-refresh(line.id);
+                            }
+                        }
+
+                        TextButton {
+                            text: "Проверить";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.sub-ping(line.id);
+                            }
+                        }
+
+                        TextButton {
+                            text: "Подключить быстрый";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.sub-fastest(line.id);
+                            }
+                        }
+
+                        if line.support: TextButton {
+                            text: "Поддержка";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.sub-support(line.id);
+                            }
+                        }
+
+                        if line.can-delete: TextButton {
+                            text: "Удалить";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.sub-delete(line.id);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                text: "Группы";
+                color: MaterialPalette.on-surface;
+                font-size: (18px / 12px) * 1rem;
+                font-weight: 600;
+            }
+
+            VerticalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                creator := AcceptField {
+                    label: "Имя группы";
+                    row-id: "create";
+                    saved: "";
+                    reset-token: root.draft-token;
+                    commit(value) => {
+                        root.group-create(value);
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: start;
+                    spacing: 8px;
+
+                    FilledButton {
+                        text: "Создать";
+                        min-width: 140px;
+                        height: 40px;
+                        horizontal-stretch: 0;
+                        vertical-stretch: 0;
+                        clicked => {
+                            root.group-create(creator.text);
+                        }
+                    }
+                }
+
+                if root.notice != "": Text {
+                    text: root.notice;
+                    wrap: word-wrap;
+                    color: root.notice-bad ? MaterialPalette.error : MaterialPalette.primary;
+                    font-size: (13px / 12px) * 1rem;
+                }
+            }
+
+            for group in root.groups: Rectangle {
+                vertical-stretch: 0;
+                border-radius: 16px;
+                background: MaterialPalette.surface;
+                border-width: 1px;
+                border-color: MaterialPalette.outline-variant;
+
+                VerticalLayout {
+                    padding: 12px;
+                    spacing: 8px;
+                    alignment: start;
+
+                    Text {
+                        text: group.name;
+                        color: MaterialPalette.on-surface;
+                        font-size: (16px / 12px) * 1rem;
+                        font-weight: 700;
+                        wrap: word-wrap;
+                        horizontal-alignment: left;
+                    }
+
+                    Text {
+                        text: group.detail;
+                        color: MaterialPalette.on-surface-variant;
+                        font-size: (12px / 12px) * 1rem;
+                        overflow: elide;
+                        horizontal-stretch: 1;
+                    }
+
+                    LiveField {
+                        label: "Имя";
+                        row-id: group.id;
+                        saved: group.name;
+                        commit(value) => {
+                            root.group-rename(group.id, value);
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 4px;
+                        alignment: start;
+
+                        TextButton {
+                            text: group.open ? "Скрыть состав" : "Состав";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.group-toggle(group.id);
+                            }
+                        }
+
+                        TextButton {
+                            text: "Удалить";
+                            horizontal-stretch: 0;
+                            clicked => {
+                                root.group-delete(group.id);
+                            }
+                        }
+                    }
+
+                    if group.open: VerticalLayout {
+                        spacing: 4px;
+                        alignment: start;
+
+                        if root.members.length == 0: Text {
+                            text: "В группе нет серверов";
+                            color: MaterialPalette.on-surface-variant;
+                            font-size: (13px / 12px) * 1rem;
+                        }
+
+                        for member in root.members: HorizontalLayout {
+                            width: parent.width;
+                            spacing: 8px;
+                            alignment: center;
+
+                            Text {
+                                text: member.name;
+                                color: MaterialPalette.on-surface;
+                                font-size: (14px / 12px) * 1rem;
+                                overflow: elide;
+                                horizontal-stretch: 1;
+                                vertical-alignment: center;
+                            }
+
+                            TextButton {
+                                text: "Убрать";
+                                horizontal-stretch: 0;
+                                vertical-stretch: 0;
+                                clicked => {
+                                    root.member-set(member.id, false);
+                                }
+                            }
+                        }
+
+                        TextButton {
+                            text: root.picker ? "Скрыть" : "Добавить сервер";
+                            horizontal-stretch: 0;
+                            vertical-stretch: 0;
+                            clicked => {
+                                root.picker-toggle();
+                            }
+                        }
+
+                        if root.picker: Rectangle {
+                            vertical-stretch: 0;
+                            border-radius: 12px;
+                            border-width: 1px;
+                            border-color: MaterialPalette.outline-variant;
+                            background: MaterialPalette.background;
+
+                            VerticalLayout {
+                                padding: 8px;
+                                spacing: 4px;
+                                alignment: start;
+
+                                LiveField {
+                                    label: "Найти сервер";
+                                    row-id: group.id;
+                                    saved: "";
+                                    commit(value) => {
+                                        root.member-filter(value);
+                                    }
+                                }
+
+                                if root.add-empty != "": Text {
+                                    text: root.add-empty;
+                                    color: MaterialPalette.on-surface-variant;
+                                    font-size: (13px / 12px) * 1rem;
+                                    wrap: word-wrap;
+                                }
+
+                                for candidate in root.candidates: HorizontalLayout {
+                                    width: parent.width;
+                                    spacing: 8px;
+                                    alignment: center;
+
+                                    Text {
+                                        text: candidate.name;
+                                        color: MaterialPalette.on-surface;
+                                        font-size: (14px / 12px) * 1rem;
+                                        overflow: elide;
+                                        horizontal-stretch: 1;
+                                        vertical-alignment: center;
+                                    }
+
+                                    TextButton {
+                                        text: "Добавить";
+                                        horizontal-stretch: 0;
+                                        vertical-stretch: 0;
+                                        clicked => {
+                                            root.member-set(candidate.id, true);
+                                        }
+                                    }
+                                }
+
+                                if root.add-pages > 1: HorizontalLayout {
+                                    spacing: 8px;
+                                    alignment: center;
+
+                                    if root.add-page > 0: TextButton {
+                                        text: "Назад";
+                                        horizontal-stretch: 0;
+                                        vertical-stretch: 0;
+                                        clicked => {
+                                            root.add-step(-1);
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "\{root.add-page + 1} / \{root.add-pages}";
+                                        color: MaterialPalette.on-surface-variant;
+                                        font-size: (13px / 12px) * 1rem;
+                                        horizontal-stretch: 0;
+                                        vertical-alignment: center;
+                                    }
+
+                                    if root.add-page + 1 < root.add-pages: TextButton {
+                                        text: "Дальше";
+                                        horizontal-stretch: 0;
+                                        vertical-stretch: 0;
+                                        clicked => {
+                                            root.add-step(1);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

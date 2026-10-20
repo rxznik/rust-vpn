@@ -1,0 +1,8 @@
+# SHA2-256 of the Xray-core v26.3.27 archives used by the desktop release.
+# Taken from the official .dgst sidecar and checked against the zip itself.
+# One line per archive: "<hex>  <zip name>". fetch_xray.py refuses an archive
+# that is not listed here.
+23cd9af937744d97776ee35ecad4972cf4b2109d1e0fe6be9930467608f7c8ae  Xray-linux-64.zip
+f5b0471d3459eff1b82e48af0aeac186abcc3298210070afbbbd8437a4e8b203  Xray-macos-64.zip
+2e93a67e8aa1936ecefb307e120830fcbd4c643ab9b1c46a2d0838d5f8409eaf  Xray-macos-arm64-v8a.zip
+d004c39288ce9ada487c6f398c7c545f7d749e44bdfdd59dbc9f865afba4e1ad  Xray-windows-64.zip

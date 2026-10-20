@@ -1,0 +1,135 @@
+import { MaterialPalette, MaterialScheme } from "@material";
+import { Palette } from "std-widgets.slint";
+
+export global AppTheme {
+    in-out property <color> background: #070b14;
+    in-out property <color> surface: #10182c;
+    in-out property <color> text: #f7f9fc;
+    in-out property <color> muted: #93a0b8;
+    in-out property <color> accent: #8eabff;
+    in-out property <color> accent-ink: #08101c;
+    in-out property <color> rim: #93a0b8;
+    in-out property <color> wash-a: #070b14;
+    in-out property <color> wash-b: #10182c;
+    in-out property <bool> dark: true;
+    in-out property <bool> frosted: false;
+
+    out property <color> sample-night: #070b14;
+    out property <color> sample-night-accent: #8eabff;
+    out property <color> sample-graphite: #121418;
+    out property <color> sample-graphite-accent: #e0b98a;
+    out property <color> sample-paper: #f3f6fb;
+    out property <color> sample-paper-accent: #3d5afe;
+    out property <color> sample-sand: #f6f1e8;
+    out property <color> sample-sand-accent: #c47a3a;
+    out property <color> sample-glass: #16304f;
+    out property <color> sample-glass-accent: #9ecbff;
+
+    out property <color> tone-ok: #1b8a4a;
+    out property <color> tone-mid: #b8860b;
+    out property <color> tone-bad: #b3261e;
+    out property <color> tone-none: #7a8494;
+    out property <color> tone-ink: #f7f9fc;
+
+    function scheme(bg: color, surface: color, text: color, muted: color, accent: color, ink: color, edge: color) -> MaterialScheme {
+        {
+            primary: accent,
+            surfaceTint: accent,
+            onPrimary: ink,
+            primaryContainer: accent,
+            onPrimaryContainer: ink,
+            secondary: muted,
+            onSecondary: bg,
+            secondaryContainer: surface,
+            onSecondaryContainer: text,
+            tertiary: accent,
+            onTertiary: ink,
+            tertiaryContainer: surface,
+            onTertiaryContainer: text,
+            error: #b3261e,
+            onError: #ffffff,
+            errorContainer: #f9dedc,
+            onErrorContainer: #410e0b,
+            background: bg,
+            onBackground: text,
+            surface: surface,
+            onSurface: text,
+            surfaceVariant: surface,
+            onSurfaceVariant: muted,
+            outline: edge,
+            outlineVariant: edge,
+            shadow: #000000,
+            scrim: #000000,
+            inverseSurface: text,
+            inverseOnSurface: bg,
+            inversePrimary: accent,
+            primaryFixed: accent,
+            onPrimaryFixed: ink,
+            primaryFixedDim: accent,
+            onPrimaryFixedVariant: accent,
+            secondaryFixed: surface,
+            onSecondaryFixed: text,
+            secondaryFixedDim: surface,
+            onSecondaryFixedVariant: muted,
+            tertiaryFixed: surface,
+            onTertiaryFixed: text,
+            tertiaryFixedDim: surface,
+            onTertiaryFixedVariant: muted,
+            surfaceDim: bg,
+            surfaceBright: surface,
+            surfaceContainerLowest: bg,
+            surfaceContainerLow: surface,
+            surfaceContainer: surface,
+            surfaceContainerHigh: surface,
+            surfaceContainerHighest: surface,
+        }
+    }
+
+    public function apply(bg: color, surface: color, text: color, muted: color, accent: color, ink: color, dark: bool, edge: color, glass: bool) {
+        root.background = bg;
+        root.surface = surface;
+        root.text = text;
+        root.muted = muted;
+        root.accent = accent;
+        root.accent-ink = ink;
+        root.rim = edge;
+        root.dark = dark;
+        root.frosted = glass;
+        let built = root.scheme(bg, surface, text, muted, accent, ink, edge);
+        MaterialPalette.schemes = {
+            light: built,
+            dark: built,
+        };
+        Palette.color-scheme = dark ? ColorScheme.dark : ColorScheme.light;
+    }
+
+    public function night() {
+        root.wash-a = #070b14;
+        root.wash-b = #10182c;
+        root.apply(#070b14, #10182c, #f7f9fc, #93a0b8, #8eabff, #08101c, true, #93a0b8, false);
+    }
+
+    public function graphite() {
+        root.wash-a = #121418;
+        root.wash-b = #1c2026;
+        root.apply(#121418, #1c2026, #f4f1ea, #a8a196, #e0b98a, #1c140c, true, #a8a196, false);
+    }
+
+    public function paper() {
+        root.wash-a = #f3f6fb;
+        root.wash-b = #ffffff;
+        root.apply(#f3f6fb, #ffffff, #1c2434, #5c6b82, #3d5afe, #ffffff, false, #5c6b82, false);
+    }
+
+    public function sand() {
+        root.wash-a = #f6f1e8;
+        root.wash-b = #fffaf4;
+        root.apply(#f6f1e8, #fffaf4, #2c241c, #7a6a58, #c47a3a, #fffaf4, false, #7a6a58, false);
+    }
+
+    public function glass() {
+        root.wash-a = #0b1220;
+        root.wash-b = #1c3058;
+        root.apply(#0b1220, #ffffff2e, #f4f7ff, #c5d0e0, #9ecbff, #071018, true, #ffffff73, true);
+    }
+}

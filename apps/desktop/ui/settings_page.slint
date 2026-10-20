@@ -1,0 +1,697 @@
+import {
+    FilledButton,
+    MaterialPalette,
+    ScrollView,
+    Slider,
+    Switch,
+    TextButton,
+    TextField,
+} from "@material";
+import { LiveField } from "components.slint";
+import { AppTheme } from "theme.slint";
+
+component Swatch inherits Rectangle {
+    in property <string> name;
+    in property <color> ink;
+    in property <color> spot;
+    in property <bool> on;
+    callback picked();
+
+    width: 88px;
+    height: 72px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    border-radius: 12px;
+    background: root.ink;
+    border-width: root.on ? 2px : 1px;
+    border-color: root.on ? MaterialPalette.primary : MaterialPalette.outline;
+
+    Rectangle {
+        x: 10px;
+        y: 10px;
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        background: root.spot;
+    }
+
+    Text {
+        x: 10px;
+        y: 40px;
+        text: root.name;
+        color: root.spot;
+        font-size: 1rem;
+    }
+
+    TouchArea {
+        width: 100%;
+        height: 100%;
+        mouse-cursor: pointer;
+        clicked => {
+            root.picked();
+        }
+    }
+}
+
+component Choice inherits Rectangle {
+    in property <string> label;
+    in property <bool> on;
+    in property <length> cell-width: 44px;
+    callback picked();
+
+    width: root.cell-width;
+    height: 32px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    border-radius: 8px;
+    background: root.on ? MaterialPalette.primary : MaterialPalette.surface;
+    border-width: 1px;
+    border-color: root.on ? MaterialPalette.primary : MaterialPalette.outline-variant;
+
+    Text {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 100%;
+        text: root.label;
+        color: root.on ? MaterialPalette.on-primary : MaterialPalette.on-surface;
+        font-size: 1rem;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    TouchArea {
+        width: 100%;
+        height: 100%;
+        mouse-cursor: pointer;
+        clicked => {
+            root.picked();
+        }
+    }
+}
+
+component SettingLine inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    vertical-stretch: 0;
+    height: 64px;
+
+    HorizontalLayout {
+        padding-left: 4px;
+        padding-right: 4px;
+        spacing: 12px;
+        cross-axis-alignment: center;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+
+            Text {
+                text: root.title;
+                color: MaterialPalette.on-surface;
+                font-size: (14px / 12px) * 1rem;
+                overflow: elide;
+            }
+
+            Text {
+                text: root.detail;
+                color: MaterialPalette.on-surface-variant;
+                font-size: 1rem;
+                overflow: elide;
+            }
+        }
+
+        @children
+    }
+}
+
+component Fold inherits Rectangle {
+    in property <string> title;
+    in-out property <bool> open: true;
+    vertical-stretch: 0;
+
+    VerticalLayout {
+        spacing: 8px;
+        alignment: start;
+
+        Rectangle {
+            height: 40px;
+            vertical-stretch: 0;
+
+            HorizontalLayout {
+                padding-left: 4px;
+                padding-right: 4px;
+                spacing: 8px;
+                cross-axis-alignment: center;
+
+                Text {
+                    text: root.open ? "▾" : "▸";
+                    color: MaterialPalette.on-surface-variant;
+                    font-size: (14px / 12px) * 1rem;
+                    horizontal-stretch: 0;
+                    vertical-alignment: center;
+                }
+
+                Text {
+                    text: root.title;
+                    color: MaterialPalette.on-surface;
+                    font-size: (16px / 12px) * 1rem;
+                    font-weight: 700;
+                    horizontal-stretch: 1;
+                    vertical-alignment: center;
+                }
+            }
+
+            TouchArea {
+                width: 100%;
+                height: 100%;
+                mouse-cursor: pointer;
+                clicked => {
+                    root.open = !root.open;
+                }
+            }
+        }
+
+        Rectangle {
+            clip: true;
+            vertical-stretch: 0;
+            height: root.open ? content.preferred-height : 0px;
+
+            content := VerticalLayout {
+                y: 0px;
+                width: 100%;
+                spacing: 8px;
+                alignment: start;
+                vertical-stretch: 0;
+
+                @children
+            }
+        }
+    }
+}
+
+export component SettingsPage inherits ScrollView {
+    in-out property <bool> tun-on;
+    in-out property <bool> proxy-on;
+    in-out property <bool> fastest-on;
+    in-out property <bool> labeled;
+    in-out property <bool> motion: true;
+    in-out property <bool> clear-on: false;
+    in-out property <string> socks-port;
+    in-out property <float> theme-opacity: 100;
+    in-out property <float> surface-opacity: 100;
+    in property <string> hwid-text;
+    in property <string> theme-id;
+    in property <color> custom-bg;
+    in property <color> custom-accent;
+    in-out property <string> custom-bg-text;
+    in-out property <string> custom-surface-text;
+    in-out property <string> custom-text-text;
+    in-out property <string> custom-muted-text;
+    in-out property <string> custom-accent-text;
+    in-out property <string> custom-ink-text;
+    in-out property <string> font-family: "";
+    in property <int> font-size: 12;
+    in property <int> ui-zoom: 100;
+
+    callback save-settings();
+    callback theme-picked(string);
+    callback fastest-launch(bool);
+    callback density-picked(string);
+    callback animations-picked(bool);
+    callback clear-picked(bool);
+    callback tun-picked(bool);
+    callback proxy-picked(bool);
+    callback background-opacity-changed(float);
+    callback surface-opacity-changed(float);
+    callback custom-edited(string, string);
+    callback font-size-picked(int);
+    callback font-family-edited(string);
+    callback font-file-clicked();
+    callback font-reset-clicked();
+    callback zoom-picked(int);
+
+    vertical-scrollbar-policy: as-needed;
+    horizontal-scrollbar-policy: always-off;
+
+    VerticalLayout {
+        width: root.visible-width;
+        padding: 16px;
+        spacing: 8px;
+        alignment: start;
+
+        Text {
+            text: "Параметры";
+            color: MaterialPalette.on-surface;
+            font-size: (22px / 12px) * 1rem;
+            font-weight: 700;
+        }
+
+        Fold {
+            title: "Основные";
+
+            SettingLine {
+                title: "TUN";
+                detail: "Туннель через tun2proxy";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.tun-on;
+                    checked_state_changed(on) => {
+                        root.tun-picked(on);
+                    }
+                }
+            }
+
+            SettingLine {
+                title: "Системный прокси";
+                detail: "SOCKS для всей сессии";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.proxy-on;
+                    checked_state_changed(on) => {
+                        root.proxy-picked(on);
+                    }
+                }
+            }
+
+            SettingLine {
+                title: "При запуске — самый быстрый";
+                detail: "Подключаться к узлу с меньшей задержкой";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.fastest-on;
+                    checked_state_changed(on) => {
+                        root.fastest-launch(on);
+                    }
+                }
+            }
+
+            TextField {
+                label: "Порт SOCKS";
+                text <=> root.socks-port;
+            }
+
+            Text {
+                text: "HWID " + root.hwid-text;
+                color: MaterialPalette.on-surface-variant;
+                font-size: 1rem;
+                overflow: elide;
+            }
+
+            FilledButton {
+                text: "Сохранить";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.save-settings();
+                }
+            }
+        }
+
+        Fold {
+            title: "Визуальные";
+
+            SettingLine {
+                title: "Подписи кнопок";
+                detail: root.labeled ? "Стандарт: иконка и текст" : "Компакт: только иконка";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.labeled;
+                    checked_state_changed(on) => {
+                        root.density-picked(on ? "standard" : "compact");
+                    }
+                }
+            }
+
+            SettingLine {
+                title: "Анимации";
+                detail: root.motion ? "Пульс подключения и проверки" : "Без движения";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.motion;
+                    checked_state_changed(on) => {
+                        root.animations-picked(on);
+                    }
+                }
+            }
+
+            if root.theme-id != "custom": SettingLine {
+                title: "Прозрачный фон";
+                detail: root.clear-on ? "Сквозь окно слегка виден стол" : "Сплошная заливка окна";
+
+                Switch {
+                    width: 52px;
+                    height: 32px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    checked <=> root.clear-on;
+                    checked_state_changed(on) => {
+                        root.clear-picked(on);
+                    }
+                }
+            }
+
+            Text {
+                text: "Шрифт";
+                color: MaterialPalette.on-surface;
+                font-size: (14px / 12px) * 1rem;
+            }
+
+            LiveField {
+                label: root.font-family == "" ? "Системный" : "Семейство";
+                row-id: "font";
+                saved: root.font-family;
+                commit(value) => {
+                    root.font-family-edited(value);
+                }
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                TextButton {
+                    text: "Файл";
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    clicked => {
+                        root.font-file-clicked();
+                    }
+                }
+
+                TextButton {
+                    text: "Системный";
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+                    clicked => {
+                        root.font-reset-clicked();
+                    }
+                }
+            }
+
+            Text {
+                text: "Размер шрифта";
+                color: MaterialPalette.on-surface;
+                font-size: (14px / 12px) * 1rem;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                Choice {
+                    label: "12";
+                    cell-width: 40px;
+                    on: root.font-size == 12;
+                    picked => { root.font-size-picked(12); }
+                }
+
+                Choice {
+                    label: "14";
+                    cell-width: 40px;
+                    on: root.font-size == 14;
+                    picked => { root.font-size-picked(14); }
+                }
+
+                Choice {
+                    label: "16";
+                    cell-width: 40px;
+                    on: root.font-size == 16;
+                    picked => { root.font-size-picked(16); }
+                }
+
+                Choice {
+                    label: "18";
+                    cell-width: 40px;
+                    on: root.font-size == 18;
+                    picked => { root.font-size-picked(18); }
+                }
+
+                Choice {
+                    label: "20";
+                    cell-width: 40px;
+                    on: root.font-size == 20;
+                    picked => { root.font-size-picked(20); }
+                }
+            }
+
+            Text {
+                text: "Масштаб";
+                color: MaterialPalette.on-surface;
+                font-size: (14px / 12px) * 1rem;
+            }
+
+            Text {
+                text: "Ctrl + и Ctrl −";
+                color: MaterialPalette.on-surface-variant;
+                font-size: 1rem;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                Choice {
+                    label: "50%";
+                    cell-width: 52px;
+                    on: root.ui-zoom == 50;
+                    picked => { root.zoom-picked(50); }
+                }
+
+                Choice {
+                    label: "75%";
+                    cell-width: 52px;
+                    on: root.ui-zoom == 75;
+                    picked => { root.zoom-picked(75); }
+                }
+
+                Choice {
+                    label: "100%";
+                    cell-width: 56px;
+                    on: root.ui-zoom == 100;
+                    picked => { root.zoom-picked(100); }
+                }
+
+                Choice {
+                    label: "125%";
+                    cell-width: 56px;
+                    on: root.ui-zoom == 125;
+                    picked => { root.zoom-picked(125); }
+                }
+
+                Choice {
+                    label: "150%";
+                    cell-width: 56px;
+                    on: root.ui-zoom == 150;
+                    picked => { root.zoom-picked(150); }
+                }
+
+                Choice {
+                    label: "175%";
+                    cell-width: 56px;
+                    on: root.ui-zoom == 175;
+                    picked => { root.zoom-picked(175); }
+                }
+
+                Choice {
+                    label: "200%";
+                    cell-width: 56px;
+                    on: root.ui-zoom == 200;
+                    picked => { root.zoom-picked(200); }
+                }
+            }
+
+            Text {
+                text: "Тема";
+                color: MaterialPalette.on-surface;
+                font-size: (14px / 12px) * 1rem;
+            }
+
+            HorizontalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                Swatch {
+                    name: "Ночь";
+                    ink: AppTheme.sample-night;
+                    spot: AppTheme.sample-night-accent;
+                    on: root.theme-id == "night";
+                    picked => {
+                        root.theme-picked("night");
+                    }
+                }
+
+                Swatch {
+                    name: "Графит";
+                    ink: AppTheme.sample-graphite;
+                    spot: AppTheme.sample-graphite-accent;
+                    on: root.theme-id == "graphite";
+                    picked => {
+                        root.theme-picked("graphite");
+                    }
+                }
+
+                Swatch {
+                    name: "Бумага";
+                    ink: AppTheme.sample-paper;
+                    spot: AppTheme.sample-paper-accent;
+                    on: root.theme-id == "paper";
+                    picked => {
+                        root.theme-picked("paper");
+                    }
+                }
+
+                Swatch {
+                    name: "Песок";
+                    ink: AppTheme.sample-sand;
+                    spot: AppTheme.sample-sand-accent;
+                    on: root.theme-id == "sand";
+                    picked => {
+                        root.theme-picked("sand");
+                    }
+                }
+
+                Swatch {
+                    name: "Стекло";
+                    ink: AppTheme.sample-glass;
+                    spot: AppTheme.sample-glass-accent;
+                    on: root.theme-id == "glass";
+                    picked => {
+                        root.theme-picked("glass");
+                    }
+                }
+
+                Swatch {
+                    name: "Своя";
+                    ink: root.custom-bg;
+                    spot: root.custom-accent;
+                    on: root.theme-id == "custom";
+                    picked => {
+                        root.theme-picked("custom");
+                    }
+                }
+            }
+
+            if root.theme-id == "custom": VerticalLayout {
+                spacing: 8px;
+                alignment: start;
+
+                Text {
+                    text: "Шесть ролей в формате #RRGGBB";
+                    color: MaterialPalette.on-surface-variant;
+                    font-size: 1rem;
+                }
+
+                LiveField {
+                    label: "Фон";
+                    row-id: "background";
+                    saved: root.custom-bg-text;
+                    commit(value) => {
+                        root.custom-edited("background", value);
+                    }
+                }
+
+                LiveField {
+                    label: "Поверхность";
+                    row-id: "surface";
+                    saved: root.custom-surface-text;
+                    commit(value) => {
+                        root.custom-edited("surface", value);
+                    }
+                }
+
+                LiveField {
+                    label: "Текст";
+                    row-id: "text";
+                    saved: root.custom-text-text;
+                    commit(value) => {
+                        root.custom-edited("text", value);
+                    }
+                }
+
+                LiveField {
+                    label: "Приглушённый текст";
+                    row-id: "muted";
+                    saved: root.custom-muted-text;
+                    commit(value) => {
+                        root.custom-edited("muted", value);
+                    }
+                }
+
+                LiveField {
+                    label: "Акцент";
+                    row-id: "accent";
+                    saved: root.custom-accent-text;
+                    commit(value) => {
+                        root.custom-edited("accent", value);
+                    }
+                }
+
+                LiveField {
+                    label: "Текст на акценте";
+                    row-id: "ink";
+                    saved: root.custom-ink-text;
+                    commit(value) => {
+                        root.custom-edited("ink", value);
+                    }
+                }
+
+                Text {
+                    text: "Прозрачность фона " + round(root.theme-opacity) + "%";
+                    color: MaterialPalette.on-surface-variant;
+                    font-size: 1rem;
+                }
+
+                Slider {
+                    horizontal-stretch: 1;
+                    enabled: true;
+                    minimum: 0;
+                    maximum: 100;
+                    value <=> root.theme-opacity;
+                    released(value) => {
+                        root.background-opacity-changed(value);
+                    }
+                }
+
+                Text {
+                    text: "Прозрачность поверхности " + round(root.surface-opacity) + "%";
+                    color: MaterialPalette.on-surface-variant;
+                    font-size: 1rem;
+                }
+
+                Slider {
+                    horizontal-stretch: 1;
+                    enabled: true;
+                    minimum: 0;
+                    maximum: 100;
+                    value <=> root.surface-opacity;
+                    released(value) => {
+                        root.surface-opacity-changed(value);
+                    }
+                }
+            }
+        }
+
+    }
+}

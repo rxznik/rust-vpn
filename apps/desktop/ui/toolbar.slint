@@ -1,0 +1,143 @@
+import { FilledButton, IconButton, MaterialPalette, TextField } from "@material";
+import { AppIcons } from "icons.slint";
+import { AppTheme } from "theme.slint";
+
+component Action inherits HorizontalLayout {
+    in property <bool> labeled;
+    in property <image> icon;
+    in property <string> label;
+    in property <string> tip;
+    in property <bool> marked: false;
+    callback clicked();
+
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    spacing: 0px;
+
+    if !root.labeled: IconButton {
+        horizontal-stretch: 0;
+        vertical-stretch: 0;
+        icon: root.icon;
+        tooltip: root.tip;
+        checked: root.marked;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    if root.labeled: FilledButton {
+        horizontal-stretch: 0;
+        vertical-stretch: 0;
+        icon: root.icon;
+        text: root.label;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Toolbar inherits Rectangle {
+    in property <bool> labeled;
+    in-out property <string> import-text;
+    in property <bool> sort-on;
+    callback import-clicked();
+    callback paste-clicked();
+    callback qr-clicked();
+    callback refresh-clicked();
+    callback ping-clicked();
+    callback sort-clicked();
+    callback fastest-clicked();
+    callback support-clicked();
+
+    background: AppTheme.frosted ? MaterialPalette.surface-container : transparent;
+    border-radius: 16px;
+    border-width: AppTheme.frosted ? 1px : 0px;
+    border-color: AppTheme.rim;
+
+    VerticalLayout {
+        padding: 8px;
+        spacing: 8px;
+
+        TextField {
+            label: "Ссылка или адрес подписки";
+            text <=> root.import-text;
+            accepted => {
+                root.import-clicked();
+            }
+        }
+
+        Flickable {
+            vertical-stretch: 0;
+            height: 48px;
+            content-height: 48px;
+            content-width: max(actions.min-width, 1px);
+
+            actions := HorizontalLayout {
+                x: 0px;
+                y: 4px;
+                height: 40px;
+                spacing: 8px;
+                alignment: start;
+                width: max(self.min-width, 1px);
+
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.link;
+                    label: "Импорт";
+                    tip: "Импорт";
+                    clicked => { root.import-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.paste;
+                    label: "Буфер";
+                    tip: "Буфер";
+                    clicked => { root.paste-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.qr;
+                    label: "QR";
+                    tip: "QR";
+                    clicked => { root.qr-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.refresh;
+                    label: "Обновить";
+                    tip: "Обновить";
+                    clicked => { root.refresh-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.ping;
+                    label: "Пинг";
+                    tip: "Пинг";
+                    clicked => { root.ping-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.sort;
+                    label: root.sort-on ? "По пингу" : "Сортировка";
+                    tip: "Сортировка по пингу";
+                    marked: root.sort-on;
+                    clicked => { root.sort-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.bolt;
+                    label: "Выбрать быстрый";
+                    tip: "Выбрать самый быстрый, без подключения";
+                    clicked => { root.fastest-clicked(); }
+                }
+                Action {
+                    labeled: root.labeled;
+                    icon: AppIcons.support;
+                    label: "Поддержка";
+                    tip: "Поддержка";
+                    clicked => { root.support-clicked(); }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,347 @@
+import { FilledButton, MaterialPalette, ScrollView, TextButton } from "@material";
+import { AppTheme } from "theme.slint";
+
+export struct LogRow {
+    stamp: string,
+    level: string,
+    from: string,
+    accepted: string,
+    route: string,
+    email: string,
+    message: string,
+}
+
+component LogCell inherits Rectangle {
+    in property <string> value;
+    in property <length> cell-width: 120px;
+    in property <bool> grow: false;
+    in property <bool> head: false;
+    in property <bool> lead: false;
+    in property <bool> active: false;
+    in property <bool> ascending: true;
+    in property <bool> chip: false;
+    callback picked();
+    property <color> rule: root.head ? MaterialPalette.on-primary.with_alpha(32%) : MaterialPalette.on-surface.with_alpha(16%);
+    property <color> chip-fill: root.value == "error" ? AppTheme.tone-bad : root.value == "warning" ? AppTheme.tone-mid : root.value == "access" ? AppTheme.tone-ok : root.value == "debug" ? MaterialPalette.on-surface.with_alpha(14%) : MaterialPalette.primary;
+    property <color> chip-ink: root.value == "debug" ? MaterialPalette.on-surface : root.value == "info" ? MaterialPalette.on-primary : AppTheme.tone-ink;
+    property <string> chip-label: root.value == "info" ? "INFO" : root.value == "warning" ? "WARN" : root.value == "error" ? "ERROR" : root.value == "debug" ? "DEBUG" : root.value == "access" ? "ACCESS" : root.value;
+
+    horizontal-stretch: root.grow ? 1 : 0;
+    min-width: root.grow ? 240px : root.cell-width;
+    max-width: root.grow ? 100000px : root.cell-width;
+    height: 100%;
+
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: root.lead ? 1px : 0px;
+        height: 100%;
+        background: root.rule;
+    }
+
+    Rectangle {
+        x: parent.width - 1px;
+        y: 0px;
+        width: 1px;
+        height: 100%;
+        background: root.rule;
+    }
+
+    if !root.chip || root.head: HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        spacing: 4px;
+
+        Text {
+            horizontal-stretch: 1;
+            text: root.value;
+            color: root.head ? MaterialPalette.on-primary : MaterialPalette.on-surface;
+            font-size: 1rem;
+            font-weight: root.head ? 700 : 400;
+            overflow: elide;
+            vertical-alignment: center;
+        }
+
+        if root.head && root.active: Text {
+            horizontal-stretch: 0;
+            text: root.ascending ? "↑" : "↓";
+            color: MaterialPalette.on-primary;
+            font-size: 1rem;
+            vertical-alignment: center;
+        }
+    }
+
+    if root.chip && !root.head && root.value != "": Rectangle {
+        x: 8px;
+        y: (parent.height - self.height) / 2;
+        height: 22px;
+        width: min(parent.width - 16px, 72px);
+        border-radius: 11px;
+        background: root.chip-fill;
+
+        Text {
+            width: 100%;
+            height: 100%;
+            text: root.chip-label;
+            color: root.chip-ink;
+            font-size: (11px / 12px) * 1rem;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    if root.head: TouchArea {
+        width: 100%;
+        height: 100%;
+        mouse-cursor: pointer;
+        clicked => {
+            root.picked();
+        }
+    }
+}
+
+component LogLineRow inherits Rectangle {
+    in property <string> stamp;
+    in property <string> level;
+    in property <string> origin;
+    in property <string> accepted;
+    in property <string> route;
+    in property <string> email;
+    in property <string> message;
+    in property <bool> head: false;
+    in property <bool> stripe: false;
+    in property <int> sort-column: -1;
+    in property <bool> sort-ascending: true;
+    callback sort-picked(int);
+
+    height: root.head ? 40px : 36px;
+    background: root.head ? MaterialPalette.primary : root.stripe ? MaterialPalette.primary.with_alpha(12%) : MaterialPalette.surface;
+
+    HorizontalLayout {
+        width: 100%;
+        height: 100%;
+
+        LogCell {
+            value: root.stamp;
+            cell-width: 168px;
+            lead: true;
+            head: root.head;
+            active: root.head && root.sort-column == 0;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(0); }
+        }
+
+        LogCell {
+            value: root.level;
+            cell-width: 96px;
+            chip: true;
+            head: root.head;
+            active: root.head && root.sort-column == 1;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(1); }
+        }
+
+        LogCell {
+            value: root.origin;
+            cell-width: 140px;
+            head: root.head;
+            active: root.head && root.sort-column == 2;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(2); }
+        }
+
+        LogCell {
+            value: root.accepted;
+            cell-width: 200px;
+            head: root.head;
+            active: root.head && root.sort-column == 3;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(3); }
+        }
+
+        LogCell {
+            value: root.route;
+            cell-width: 140px;
+            head: root.head;
+            active: root.head && root.sort-column == 4;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(4); }
+        }
+
+        LogCell {
+            value: root.email;
+            cell-width: 120px;
+            head: root.head;
+            active: root.head && root.sort-column == 5;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(5); }
+        }
+
+        LogCell {
+            value: root.message;
+            grow: true;
+            head: root.head;
+            active: root.head && root.sort-column == 6;
+            ascending: root.sort-ascending;
+            picked => { root.sort-picked(6); }
+        }
+    }
+
+    if root.head: Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        width: 100%;
+        background: MaterialPalette.on-primary.with_alpha(35%);
+    }
+}
+
+export component LogsPage inherits Rectangle {
+    in property <string> log-text;
+    in property <[LogRow]> rows;
+    in-out property <bool> table: false;
+    in-out property <int> sort-column: -1;
+    in-out property <bool> sort-ascending: true;
+    callback export-clicked();
+    callback sort-picked(int);
+    callback table-opened();
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+
+            if !root.table: FilledButton {
+                text: "Текст";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+            }
+            if root.table: TextButton {
+                text: "Текст";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.table = false;
+                }
+            }
+            if root.table: FilledButton {
+                text: "Таблица";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+            }
+            if !root.table: TextButton {
+                text: "Таблица";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.table = true;
+                    root.table-opened();
+                }
+            }
+            FilledButton {
+                text: "Экспорт";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.export-clicked();
+                }
+            }
+        }
+
+        if !root.table: raw := ScrollView {
+            vertical-stretch: 1;
+            horizontal-stretch: 1;
+            vertical-scrollbar-policy: as-needed;
+            horizontal-scrollbar-policy: always-off;
+
+            VerticalLayout {
+                x: 0px;
+                width: raw.visible-width;
+                alignment: start;
+
+                Text {
+                    width: parent.width;
+                    text: root.log-text == "" ? "Журнал пуст" : root.log-text;
+                    color: MaterialPalette.on-surface;
+                    font-size: (13px / 12px) * 1rem;
+                    wrap: word-wrap;
+                }
+            }
+        }
+
+        if root.table: Rectangle {
+            vertical-stretch: 1;
+            horizontal-stretch: 1;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: MaterialPalette.outline-variant;
+            clip: true;
+
+            sheet := ScrollView {
+                property <length> sheet-width: max(self.visible-width, 1120px);
+
+                width: 100%;
+                height: 100%;
+                vertical-scrollbar-policy: as-needed;
+                horizontal-scrollbar-policy: as-needed;
+                content-width: sheet.sheet-width;
+                content-height: body.preferred-height + 40px;
+
+                body := VerticalLayout {
+                    x: 0px;
+                    y: 40px;
+                    width: sheet.sheet-width;
+                    alignment: start;
+
+                    if root.rows.length == 0: Rectangle {
+                        height: 36px;
+
+                        Text {
+                            x: 12px;
+                            width: parent.width - 12px;
+                            height: 100%;
+                            text: "Журнал пуст";
+                            color: MaterialPalette.on-surface;
+                            font-size: (13px / 12px) * 1rem;
+                            vertical-alignment: center;
+                        }
+                    }
+
+                    for row[index] in root.rows: LogLineRow {
+                        stamp: row.stamp;
+                        level: row.level;
+                        origin: row.from;
+                        accepted: row.accepted;
+                        route: row.route;
+                        email: row.email;
+                        message: row.message;
+                        stripe: mod(index, 2) == 1;
+                    }
+                }
+
+                LogLineRow {
+                    x: 0px;
+                    y: -sheet.viewport-y;
+                    width: sheet.sheet-width;
+                    z: 1;
+                    stamp: "Время";
+                    level: "Уровень";
+                    origin: "Откуда";
+                    accepted: "Принято";
+                    route: "Маршрут";
+                    email: "Почта";
+                    message: "Сообщение";
+                    head: true;
+                    sort-column: root.sort-column;
+                    sort-ascending: root.sort-ascending;
+                    sort-picked(column) => {
+                        root.sort-picked(column);
+                    }
+                }
+            }
+        }
+    }
+}

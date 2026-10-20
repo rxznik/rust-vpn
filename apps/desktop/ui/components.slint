@@ -1,0 +1,64 @@
+import { TextField } from "@material";
+
+component FieldShell inherits VerticalLayout {
+    in property <string> label;
+    in property <string> row-id;
+    in property <string> saved;
+    in property <int> reset-token: 0;
+    out property <string> text: root.draft;
+    callback edited(string);
+    callback accepted(string);
+
+    property <string> draft: root.saved;
+    property <bool> touched: false;
+
+    horizontal-stretch: 1;
+    vertical-stretch: 0;
+    spacing: 0;
+
+    changed row-id => {
+        root.touched = false;
+        root.draft = root.saved;
+    }
+
+    changed reset-token => {
+        root.touched = false;
+        root.draft = root.saved;
+    }
+
+    changed saved => {
+        if (!root.touched) {
+            root.draft = root.saved;
+        }
+    }
+
+    TextField {
+        label: root.label;
+        text <=> root.draft;
+        horizontal-stretch: 1;
+        vertical-stretch: 0;
+        edited(value) => {
+            root.touched = true;
+            root.edited(value);
+        }
+        accepted(value) => {
+            root.accepted(value);
+        }
+    }
+}
+
+export component LiveField inherits FieldShell {
+    callback commit(string);
+
+    edited(value) => {
+        root.commit(value);
+    }
+}
+
+export component AcceptField inherits FieldShell {
+    callback commit(string);
+
+    accepted(value) => {
+        root.commit(value);
+    }
+}

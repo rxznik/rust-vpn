@@ -1,0 +1,16 @@
+[package]
+name = "rvpn-subscription"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+aes-gcm = "0.10"
+base64 = "0.22"
+rvpn-links = { path = "../links" }
+rvpn-model = { path = "../model" }
+serde_json = "1"
+thiserror = "2"
+ureq = { version = "2.12", default-features = false, features = ["tls"] }
+url = "2"

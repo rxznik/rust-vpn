@@ -1,0 +1,212 @@
+import { MaterialPalette, TextButton } from "@material";
+import { ServerCard, ServerRow } from "server_card.slint";
+
+export struct HomeEntry {
+    header: bool,
+    section-id: string,
+    title: string,
+    detail: string,
+    open: bool,
+    has-url: bool,
+    server: ServerRow,
+}
+
+export component SectionHead inherits Rectangle {
+    in property <string> title;
+    in property <string> detail;
+    in property <bool> open;
+    in property <bool> has-url;
+    callback toggled();
+    callback ping();
+    callback fastest();
+    callback refresh();
+
+    vertical-stretch: 0;
+    height: column.preferred-height;
+    border-radius: 16px;
+    background: MaterialPalette.surface;
+    border-width: 1px;
+    border-color: MaterialPalette.outline-variant;
+
+    column := VerticalLayout {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        vertical-stretch: 0;
+        padding: 8px;
+        padding-left: 4px;
+        spacing: 2px;
+        alignment: start;
+
+        HorizontalLayout {
+            width: parent.width;
+            spacing: 4px;
+            alignment: start;
+            vertical-stretch: 0;
+
+            Rectangle {
+                width: 40px;
+                height: 40px;
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                border-radius: 20px;
+
+                Text {
+                    width: 100%;
+                    height: 100%;
+                    text: root.open ? "▾" : "▸";
+                    color: MaterialPalette.primary;
+                    font-size: (22px / 12px) * 1rem;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.toggled();
+                    }
+                }
+            }
+
+            Rectangle {
+                min-width: 160px;
+                min-height: 44px;
+                horizontal-stretch: 1;
+                vertical-stretch: 0;
+
+                VerticalLayout {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width;
+                    height: 100%;
+                    alignment: center;
+                    spacing: 0px;
+
+                    Text {
+                        text: root.title;
+                        width: parent.width;
+                        color: MaterialPalette.on-surface;
+                        font-size: (18px / 12px) * 1rem;
+                        font-weight: 700;
+                        overflow: elide;
+                        horizontal-alignment: left;
+                        vertical-stretch: 0;
+                    }
+
+                    Text {
+                        text: root.detail;
+                        width: parent.width;
+                        color: MaterialPalette.on-surface-variant;
+                        font-size: (13px / 12px) * 1rem;
+                        overflow: elide;
+                        horizontal-alignment: left;
+                        vertical-stretch: 0;
+                    }
+                }
+
+                TouchArea {
+                    width: 100%;
+                    height: 100%;
+                    mouse-cursor: pointer;
+                    clicked => {
+                        root.toggled();
+                    }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            padding-left: 4px;
+            spacing: 4px;
+            alignment: start;
+            vertical-stretch: 0;
+
+            if root.has-url: TextButton {
+                text: "Обновить";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.refresh();
+                }
+            }
+
+            TextButton {
+                text: "Проверить";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.ping();
+                }
+            }
+
+            TextButton {
+                text: "Подключить быстрый";
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                clicked => {
+                    root.fastest();
+                }
+            }
+        }
+    }
+}
+
+export component HomeRow inherits VerticalLayout {
+    in property <HomeEntry> entry;
+    in property <bool> on;
+    in property <bool> live;
+    in property <bool> motion;
+    in property <float> ping-pulse;
+    in property <float> live-pulse;
+    callback toggled();
+    callback ping();
+    callback fastest();
+    callback refresh();
+    callback picked();
+    callback activate();
+
+    vertical-stretch: 0;
+    spacing: 0px;
+    alignment: start;
+
+    if root.entry.header: SectionHead {
+        width: 100%;
+        vertical-stretch: 0;
+        title: root.entry.title;
+        detail: root.entry.detail;
+        open: root.entry.open;
+        has-url: root.entry.has-url;
+        toggled => {
+            root.toggled();
+        }
+        ping => {
+            root.ping();
+        }
+        fastest => {
+            root.fastest();
+        }
+        refresh => {
+            root.refresh();
+        }
+    }
+
+    if !root.entry.header: ServerCard {
+        width: 100%;
+        server: root.entry.server;
+        on: root.on;
+        live: root.live;
+        motion: root.motion;
+        ping-pulse: root.ping-pulse;
+        live-pulse: root.live-pulse;
+        picked => {
+            root.picked();
+        }
+        activate => {
+            root.activate();
+        }
+    }
+}

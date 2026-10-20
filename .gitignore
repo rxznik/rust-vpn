@@ -1,0 +1,19 @@
+/target
+/.tmp
+**/*.dat
+/resources/xray/**/xray
+/resources/xray/**/xray.exe
+.DS_Store
+*.apk
+*.aab
+xcuserdata
+.idea
+.gradle
+local.properties
+.vscode
+__pycache__
+
+
+# remove when mobile release is ready
+/apps/ios
+/apps/android

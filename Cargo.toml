@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/model",
+    "crates/links",
+    "crates/xray",
+    "crates/routing",
+    "crates/subscription",
+    "crates/store",
+    "crates/platform",
+    "crates/tun",
+    "crates/probe",
+    "crates/app",
+    "crates/ffi",
+    "apps/desktop",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+rust-version = "1.85"
+
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.test]
+debug = "line-tables-only"

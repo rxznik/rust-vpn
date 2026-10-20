@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: check install script syntax
+        run: |
+          bash -n scripts/install-linux.sh
+          bash -n scripts/install-macos.sh
+      - uses: dtolnay/rust-toolchain@stable
+      - name: system libraries for the desktop shell
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libfontconfig1
+      - name: test fetch_xray script
+        run: python3 scripts/test_fetch_xray.py
+      - name: test
+        run: cargo test --workspace --offline
+      - name: fetch pinned Xray-core
+        continue-on-error: true
+        run: python3 scripts/fetch_xray.py linux x86_64

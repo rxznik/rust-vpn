@@ -1,0 +1,15 @@
+[package]
+name = "rvpn-routing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64 = "0.22"
+rvpn-model = { path = "../model" }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+ureq = { version = "2.12", default-features = false, features = ["tls"] }
+url = "2"

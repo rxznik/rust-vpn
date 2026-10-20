@@ -1,0 +1,232 @@
+import { MaterialPalette, OutlinedCard } from "@material";
+import { AppTheme } from "theme.slint";
+
+export struct NameRun {
+    text: string,
+    mark: image,
+}
+
+export struct ServerRow {
+    id: string,
+    name: string,
+    subtitle: string,
+    delay: string,
+    tone: int,
+    runs: [NameRun],
+}
+
+export component NameLine inherits HorizontalLayout {
+    in property <[NameRun]> runs;
+    in property <color> color: MaterialPalette.on-surface;
+    in property <length> mark-size: (18px / 12px) * 1rem;
+    in property <length> text-size: (14px / 12px) * 1rem;
+    in property <int> text-weight: 600;
+
+    spacing: 4px;
+    alignment: start;
+    cross-axis-alignment: center;
+
+    for run in root.runs: HorizontalLayout {
+        spacing: 0px;
+        alignment: start;
+        cross-axis-alignment: center;
+        horizontal-stretch: run.mark.width > 0 ? 0 : 1;
+        vertical-stretch: 0;
+
+        if run.mark.width > 0: Image {
+            source: run.mark;
+            width: root.mark-size;
+            height: root.mark-size;
+            horizontal-stretch: 0;
+            vertical-stretch: 0;
+            image-fit: contain;
+        }
+
+        if run.text != "": Text {
+            text: run.text;
+            color: root.color;
+            font-size: root.text-size;
+            font-weight: root.text-weight;
+            overflow: elide;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+    }
+}
+
+component DelayBadge inherits Rectangle {
+    in property <string> label;
+    in property <int> tone;
+    in property <bool> live;
+    in property <float> pulse: 0;
+    property <color> fill: root.tone == 1 ? AppTheme.tone-ok : root.tone == 2 ? AppTheme.tone-mid : root.tone == 3 ? AppTheme.tone-bad : MaterialPalette.surface-container-highest;
+    property <string> caption: root.label == "" ? "—" : root.label;
+
+    width: 84px;
+    height: 28px;
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        width: parent.width + 18px * root.pulse;
+        height: parent.height + 14px * root.pulse;
+        border-radius: self.height / 2;
+        background: root.fill.with_alpha(root.pulse * 40%);
+    }
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        border-radius: 12px;
+        background: root.fill;
+        border-width: root.live ? 2px : 0px;
+        border-color: AppTheme.tone-ok;
+    }
+
+    HorizontalLayout {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 100%;
+        alignment: center;
+        padding-left: 6px;
+        padding-right: 6px;
+
+        Text {
+            text: root.caption;
+            color: root.tone == 0 ? AppTheme.tone-none : AppTheme.tone-ink;
+            font-size: 1rem;
+            font-weight: 600;
+            horizontal-stretch: 0;
+            vertical-stretch: 0;
+            overflow: elide;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component ServerCard inherits Rectangle {
+    in property <ServerRow> server;
+    in property <bool> on;
+    in property <bool> live;
+    in property <float> ping-pulse: 1;
+    in property <float> live-pulse: 1;
+    in property <bool> motion: true;
+    callback picked();
+    callback activate();
+
+    height: 76px;
+    vertical-stretch: 0;
+    horizontal-stretch: 1;
+    clip: true;
+
+    card := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 4px;
+        width: parent.width / 1.025;
+        height: 68px;
+        border-radius: 12px;
+        border-width: root.on ? 2px : 0px;
+        border-color: MaterialPalette.primary;
+        transform-scale: 1;
+        animate transform-scale {
+            duration: root.motion ? 300ms : 0ms;
+            easing: ease-in-out;
+        }
+
+        OutlinedCard {
+            x: 2px;
+            y: 2px;
+            width: parent.width - 4px;
+            height: parent.height - 4px;
+            clickable: false;
+
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 110px;
+                spacing: 12px;
+                alignment: start;
+                cross-axis-alignment: center;
+                width: 100%;
+                height: 100%;
+
+                Rectangle {
+                    width: 22px;
+                    height: 22px;
+                    horizontal-stretch: 0;
+                    vertical-stretch: 0;
+
+                    Rectangle {
+                        width: 8px + 14px * root.live-pulse;
+                        height: self.width;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: self.width / 2;
+                        background: AppTheme.tone-ok;
+                        opacity: root.live-pulse * 0.75;
+                    }
+
+                    Rectangle {
+                        width: 8px;
+                        height: 8px;
+                        x: (parent.width - self.width) / 2;
+                        y: (parent.height - self.height) / 2;
+                        border-radius: 4px;
+                        background: root.live ? AppTheme.tone-ok : MaterialPalette.outline-variant;
+                    }
+                }
+
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    spacing: 2px;
+
+                    NameLine {
+                        runs: root.server.runs;
+                        color: MaterialPalette.on-surface;
+                        mark-size: (18px / 12px) * 1rem;
+                        text-size: (14px / 12px) * 1rem;
+                        text-weight: 600;
+                    }
+
+                    if root.server.subtitle != "": Text {
+                        text: root.server.subtitle;
+                        color: MaterialPalette.on-surface-variant;
+                        font-size: 1rem;
+                        overflow: elide;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+
+        DelayBadge {
+            x: parent.width - self.width - 18px;
+            y: (parent.height - self.height) / 2;
+            label: root.server.delay;
+            tone: root.server.tone;
+            live: root.live;
+            pulse: root.live-pulse > 0 ? root.live-pulse : root.ping-pulse;
+        }
+
+        touch := TouchArea {
+            width: 100%;
+            height: 100%;
+            mouse-cursor: pointer;
+            clicked => {
+                root.picked();
+            }
+            double-clicked => {
+                root.activate();
+            }
+        }
+    }
+
+    states [
+        raised when root.motion && touch.has-hover: {
+            card.transform-scale: 1.025;
+        }
+    ]
+}

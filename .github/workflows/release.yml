@@ -1,0 +1,166 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: System libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libfontconfig1 librsvg2-bin
+
+      - name: Install librsvg
+        if: runner.os == 'macOS' && hashFiles('scripts/render_icon.py') != ''
+        run: |
+          if ! command -v rsvg-convert >/dev/null 2>&1; then
+            brew install librsvg
+          fi
+
+      - name: Render icon
+        if: hashFiles('scripts/render_icon.py') != ''
+        continue-on-error: ${{ runner.os == 'Windows' }}
+        shell: bash
+        run: python3 scripts/render_icon.py
+
+      - name: Fetch pinned Xray-core
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ runner.os }}" in
+            Linux)
+              python3 scripts/fetch_xray.py linux x86_64
+              ;;
+            macOS)
+              machine="$(uname -m)"
+              case "$machine" in
+                arm64|aarch64)
+                  python3 scripts/fetch_xray.py darwin aarch64
+                  ;;
+                x86_64)
+                  python3 scripts/fetch_xray.py darwin x86_64
+                  ;;
+                *)
+                  echo "unsupported macOS architecture: ${machine}" >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            Windows)
+              python3 scripts/fetch_xray.py windows x86_64
+              ;;
+          esac
+
+      - name: Build
+        run: cargo build --release -p rustvpn
+
+      - name: Stage package
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="stage"
+          rm -rf "$stage"
+          mkdir -p "$stage"
+
+          copy_if_present() {
+            local name="$1"
+            if [[ -f "resources/icons/${name}" ]]; then
+              cp "resources/icons/${name}" "${stage}/${name}"
+            elif [[ -f "${name}" ]]; then
+              cp "${name}" "${stage}/${name}"
+            fi
+          }
+
+          case "${{ runner.os }}" in
+            Linux)
+              cp target/release/rustvpn "${stage}/rustvpn"
+              cp resources/xray/linux-x64/xray "${stage}/xray"
+              asset="rustvpn-linux-x86_64.tar.gz"
+              ;;
+            macOS)
+              machine="$(uname -m)"
+              cp target/release/rustvpn "${stage}/rustvpn"
+              case "$machine" in
+                arm64|aarch64)
+                  cp resources/xray/macos-arm64/xray "${stage}/xray"
+                  asset="rustvpn-macos-aarch64.tar.gz"
+                  ;;
+                x86_64)
+                  cp resources/xray/macos-x64/xray "${stage}/xray"
+                  asset="rustvpn-macos-x86_64.tar.gz"
+                  ;;
+                *)
+                  echo "unsupported macOS architecture: ${machine}" >&2
+                  exit 1
+                  ;;
+              esac
+              ;;
+            Windows)
+              cp target/release/rustvpn.exe "${stage}/rustvpn.exe"
+              cp resources/xray/windows-x64/xray.exe "${stage}/xray.exe"
+              asset="rustvpn-windows-x86_64.zip"
+              ;;
+          esac
+
+          copy_if_present rustvpn.png
+          copy_if_present rustvpn.ico
+
+          if [[ "${{ runner.os }}" != "Windows" && ! -f "${stage}/rustvpn.png" ]]; then
+            echo "archive is missing rustvpn.png" >&2
+            exit 1
+          fi
+
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            powershell.exe -NoProfile -Command "Set-Location -LiteralPath 'stage'; Compress-Archive -Force -Path * -DestinationPath (Join-Path '..' '${asset}')"
+          else
+            (
+              cd "$stage"
+              COPYFILE_DISABLE=1 tar -czf "../${asset}" *
+            )
+          fi
+
+          echo "ASSET_PATH=${asset}" >> "$GITHUB_ENV"
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ASSET_PATH }}
+          path: ${{ env.ASSET_PATH }}
+          if-no-files-found: error
+
+  publish:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: dist/*
+          fail_on_unmatched_files: true

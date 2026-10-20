@@ -1,0 +1,22 @@
+[package]
+name = "rvpn-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+base64 = "0.22"
+rand = "0.8"
+rvpn-links = { path = "../links" }
+rvpn-model = { path = "../model" }
+rvpn-platform = { path = "../platform" }
+rvpn-probe = { path = "../probe" }
+rvpn-routing = { path = "../routing" }
+rvpn-store = { path = "../store" }
+rvpn-subscription = { path = "../subscription" }
+rvpn-tun = { path = "../tun" }
+rvpn-xray = { path = "../xray" }
+serde_json = "1"
+thiserror = "2"
+url = "2"

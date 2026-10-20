@@ -1,0 +1,640 @@
+import { Icon, MaterialPalette, MaterialWindow, ScrollView } from "@material";
+import { AppIcons } from "icons.slint";
+import { AppTheme } from "theme.slint";
+import { Hero } from "hero.slint";
+import { HomeEntry, HomeRow } from "home.slint";
+import { GroupLine, ListsPage, MemberLine, SubLine } from "lists_page.slint";
+import { LogRow, LogsPage } from "logs_page.slint";
+import { NameRun } from "server_card.slint";
+import { SettingsPage } from "settings_page.slint";
+import { Toolbar } from "toolbar.slint";
+
+component SideTab inherits Rectangle {
+    in property <image> icon;
+    in property <string> caption;
+    in property <bool> on;
+    callback tapped();
+
+    horizontal-stretch: 1;
+    vertical-stretch: 0;
+    height: root.caption == "" ? 48px : 64px;
+    border-radius: 16px;
+    background: root.on ? MaterialPalette.primary : transparent;
+
+    VerticalLayout {
+        width: 100%;
+        height: 100%;
+        alignment: center;
+        spacing: 2px;
+
+        HorizontalLayout {
+            width: parent.width;
+            alignment: center;
+            vertical-stretch: 0;
+
+            Icon {
+                source: root.icon;
+                width: 24px;
+                height: 24px;
+                horizontal-stretch: 0;
+                vertical-stretch: 0;
+                colorize: root.on ? MaterialPalette.on-primary : MaterialPalette.on-surface-variant;
+            }
+        }
+
+        if root.caption != "": Text {
+            text: root.caption;
+            width: parent.width;
+            color: root.on ? MaterialPalette.on-primary : MaterialPalette.on-surface-variant;
+            font-size: (11px / 12px) * 1rem;
+            font-weight: 600;
+            horizontal-alignment: center;
+            overflow: elide;
+            vertical-stretch: 0;
+        }
+    }
+
+    TouchArea {
+        width: 100%;
+        height: 100%;
+        mouse-cursor: pointer;
+        clicked => {
+            root.tapped();
+        }
+    }
+}
+
+export component MainWindow inherits MaterialWindow {
+    title: "rustvpn";
+    preferred-width: 1100px;
+    preferred-height: 740px;
+    min-width: 880px;
+    min-height: 620px;
+    background: transparent;
+    default-font-family: root.font-family;
+    default-font-size: root.font-size * 1px;
+
+    in-out property <string> status-text: "Не в сети";
+    in-out property <string> traffic-text: "";
+    in-out property <string> announce-text: "";
+    in-out property <string> import-text: "";
+    in-out property <string> hwid-text: "";
+    in-out property <string> socks-port: "10808";
+    in-out property <string> selected-id: "";
+    in-out property <string> selected-name: "";
+    in-out property <[NameRun]> selected-runs: [];
+    in-out property <string> up-text: "—";
+    in-out property <string> down-text: "—";
+    in-out property <bool> tun-enabled: false;
+    in-out property <bool> proxy-enabled: true;
+    in-out property <int> phase: 0;
+    in-out property <[HomeEntry]> home: [];
+    in-out property <int> server-count: 0;
+    in-out property <[SubLine]> sub-lines: [];
+    in-out property <[GroupLine]> group-lines: [];
+    in-out property <[MemberLine]> member-lines: [];
+    in-out property <int> draft-token: 0;
+    in-out property <bool> picker-open: false;
+    in-out property <[MemberLine]> candidate-lines: [];
+    in-out property <int> add-page: 0;
+    in-out property <int> add-pages: 0;
+    in-out property <string> add-empty: "";
+    in-out property <string> list-notice: "";
+    in-out property <bool> list-notice-bad: false;
+    in-out property <string> armed-delete: "";
+    in-out property <int> page: 0;
+    in-out property <string> live-id: "";
+    in-out property <string> live-name: "";
+    in-out property <[NameRun]> live-runs: [];
+    in-out property <bool> disconnecting: false;
+    in-out property <string> theme-id: "night";
+    in-out property <bool> sort-by-ping: false;
+    in-out property <bool> fastest-on: false;
+    in-out property <string> log-text: "";
+    in-out property <[LogRow]> log-rows: [];
+    in-out property <bool> log-table: false;
+    in-out property <int> log-sort-column: -1;
+    in-out property <bool> log-sort-ascending: true;
+    in-out property <bool> labeled: true;
+    in-out property <bool> motion: true;
+    in-out property <bool> clear-background: false;
+    in-out property <bool> checking: false;
+    in-out property <string> custom-bg-text: "#070B14";
+    in-out property <string> custom-surface-text: "#10182C";
+    in-out property <string> custom-text-text: "#F7F9FC";
+    in-out property <string> custom-muted-text: "#93A0B8";
+    in-out property <string> custom-accent-text: "#8EABFF";
+    in-out property <string> custom-ink-text: "#08101C";
+    in-out property <color> custom-bg-color: #070b14;
+    in-out property <color> custom-accent-color: #8eabff;
+    in-out property <float> custom-opacity: 100;
+    in-out property <float> custom-surface-opacity: 100;
+    in-out property <string> font-family: "";
+    in-out property <int> font-size: 12;
+    in-out property <int> ui-zoom: 100;
+    property <float> bar: 0.15;
+    property <angle> power-phase: 0deg;
+    property <float> power-wave: 0;
+    property <angle> ping-phase: 0deg;
+    property <float> ping-wave: 0;
+    property <angle> live-phase: 0deg;
+    property <float> live-wave: 0;
+    property <float> flow: 0;
+    property <bool> show-veil: root.clear-background && root.theme-id != "custom";
+
+    callback connect-selected();
+    callback disconnect();
+    callback cancel-connect();
+    callback import-clicked();
+    callback paste-clicked();
+    callback qr-clicked();
+    callback refresh-clicked();
+    callback ping-clicked();
+    callback sort-clicked();
+    callback fastest-clicked();
+    callback fastest-launch(bool);
+    callback save-settings();
+    callback select-server(string);
+    callback support-clicked();
+    callback theme-picked(string);
+    callback density-picked(string);
+    callback animations-picked(bool);
+    callback clear-picked(bool);
+    callback tun-picked(bool);
+    callback proxy-picked(bool);
+    callback page-changed(int);
+    callback export-logs(bool);
+    callback sort-logs(int);
+    callback open-log-table();
+    callback background-opacity-changed(float);
+    callback surface-opacity-changed(float);
+    callback custom-edited(string, string);
+    callback font-size-picked(int);
+    callback font-family-edited(string);
+    callback font-file-clicked();
+    callback font-reset-clicked();
+    callback zoom-picked(int);
+    callback section-toggled(string);
+    callback section-ping(string);
+    callback section-fastest(string);
+    callback section-refresh(string);
+    callback sub-refresh(string);
+    callback sub-ping(string);
+    callback sub-fastest(string);
+    callback sub-rename(string, string);
+    callback sub-delete(string);
+    callback sub-support(string);
+    callback group-create(string);
+    callback group-rename(string, string);
+    callback group-delete(string);
+    callback group-toggle(string);
+    callback member-filter(string);
+    callback picker-toggle();
+    callback add-step(int);
+    callback member-set(string, bool);
+
+    public function apply-theme(id: string) {
+        root.theme-id = id;
+        if (id == "graphite") {
+            AppTheme.graphite();
+        } else if (id == "paper") {
+            AppTheme.paper();
+        } else if (id == "sand") {
+            AppTheme.sand();
+        } else if (id == "glass") {
+            AppTheme.glass();
+        } else if (id == "custom") {
+        } else {
+            root.theme-id = "night";
+            AppTheme.night();
+        }
+    }
+
+    public function apply-custom(bg: color, surface: color, text: color, muted: color, accent: color, ink: color, dark: bool) {
+        root.theme-id = "custom";
+        root.custom-bg-color = bg;
+        root.custom-accent-color = accent;
+        AppTheme.apply(bg, surface, text, muted, accent, ink, dark, muted, false);
+    }
+
+    function power() {
+        if (root.disconnecting) {
+            return;
+        }
+        if (root.phase == 1) {
+            root.phase = 0;
+            root.status-text = "Отменено";
+            root.cancel-connect();
+            return;
+        }
+        if (root.phase == 2) {
+            root.disconnecting = true;
+            root.status-text = "Отключение";
+            root.disconnect();
+        } else {
+            root.phase = 1;
+            root.status-text = "Подключение";
+            root.connect-selected();
+        }
+    }
+
+    function choose(id: string, name: string, runs: [NameRun]) {
+        root.selected-id = id;
+        root.selected-name = name;
+        root.selected-runs = runs;
+        root.select-server(id);
+    }
+
+    function launch(id: string, name: string, runs: [NameRun]) {
+        if (root.phase == 1 || root.disconnecting) {
+            return;
+        }
+        root.choose(id, name, runs);
+        root.phase = 1;
+        root.status-text = "Подключение";
+        root.connect-selected();
+    }
+
+    changed page => {
+        root.page-changed(root.page);
+    }
+
+    Timer {
+        interval: 50ms;
+        running: root.motion && (root.phase == 1 || root.phase == 2 || root.disconnecting);
+        triggered => {
+            root.power-phase = mod(root.power-phase + (root.phase == 2 ? 1.4deg : 2.4deg), 360deg);
+            root.power-wave = (sin(root.power-phase) + 1) / 2;
+            root.live-phase = mod(root.live-phase + 1.2deg, 360deg);
+            root.live-wave = (sin(root.live-phase) + 1) / 2;
+            if (root.phase == 2) {
+                root.flow = mod(root.flow + 0.006, 1);
+            }
+            if (root.phase == 1 || root.disconnecting) {
+                root.bar = mod(root.bar + 0.012, 1);
+            }
+        }
+    }
+
+    Timer {
+        interval: 50ms;
+        running: root.motion && root.checking;
+        triggered => {
+            root.ping-phase = mod(root.ping-phase + 2.2deg, 360deg);
+            root.ping-wave = (sin(root.ping-phase) + 1) / 2;
+        }
+    }
+
+    if !root.show-veil: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: MaterialPalette.background;
+    }
+
+    if AppTheme.frosted && !root.show-veil: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: @linear-gradient(165deg, AppTheme.wash-a 0%, AppTheme.wash-b 55%, AppTheme.wash-a 100%);
+    }
+
+    if root.show-veil: Rectangle {
+        width: 100%;
+        height: 100%;
+        background: AppTheme.dark ? #000000d9 : #ffffffd9;
+    }
+
+    HorizontalLayout {
+        width: 100%;
+        height: 100%;
+        Rectangle {
+            width: 104px;
+            horizontal-stretch: 0;
+            vertical-stretch: 1;
+            background: MaterialPalette.surface;
+
+            VerticalLayout {
+                padding: 12px;
+                padding-top: 16px;
+                spacing: 4px;
+                alignment: start;
+
+                SideTab {
+                    icon: AppIcons.servers;
+                    caption: root.labeled ? "Серверы" : "";
+                    on: root.page == 0;
+                    tapped => { root.page = 0; }
+                }
+
+                SideTab {
+                    icon: AppIcons.lists;
+                    caption: root.labeled ? "Списки" : "";
+                    on: root.page == 1;
+                    tapped => { root.page = 1; }
+                }
+
+                SideTab {
+                    icon: AppIcons.settings;
+                    caption: root.labeled ? "Параметры" : "";
+                    on: root.page == 2;
+                    tapped => { root.page = 2; }
+                }
+
+                SideTab {
+                    icon: AppIcons.logs;
+                    caption: root.labeled ? "Журнал" : "";
+                    on: root.page == 3;
+                    tapped => { root.page = 3; }
+                }
+            }
+        }
+
+        Rectangle {
+            horizontal-stretch: 1;
+            vertical-stretch: 1;
+
+            if root.page == 0: VerticalLayout {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                padding: 12px;
+                spacing: 12px;
+
+                Hero {
+                    width: 100%;
+                    vertical-stretch: 0;
+                    phase: root.phase;
+                    disconnecting: root.disconnecting;
+                    status-text: root.status-text;
+                    selected-name: root.selected-name;
+                    selected-id: root.selected-id;
+                    live-id: root.live-id;
+                    up-text: root.up-text;
+                    down-text: root.down-text;
+                    traffic-text: root.traffic-text;
+                    announce-text: root.announce-text;
+                    bar: root.motion && (root.phase == 1 || root.disconnecting) ? root.bar : 1;
+                    power-pulse: root.motion && (root.phase == 1 || root.phase == 2 || root.disconnecting) ? root.power-wave : 0;
+                    flowing: root.motion && root.phase == 2;
+                    flow: root.flow;
+                    motion: root.motion;
+                    title-runs: root.phase == 2 && root.live-name != "" ? root.live-runs : root.selected-runs;
+                    next-runs: root.selected-runs;
+                    activate => {
+                        root.power();
+                    }
+                }
+
+                Toolbar {
+                    width: 100%;
+                    vertical-stretch: 0;
+                    labeled: root.labeled;
+                    import-text <=> root.import-text;
+                    sort-on: root.sort-by-ping;
+                    import-clicked => {
+                        root.import-clicked();
+                    }
+                    paste-clicked => {
+                        root.paste-clicked();
+                    }
+                    qr-clicked => {
+                        root.qr-clicked();
+                    }
+                    refresh-clicked => {
+                        root.refresh-clicked();
+                    }
+                    ping-clicked => {
+                        root.ping-clicked();
+                    }
+                    sort-clicked => {
+                        root.sort-clicked();
+                    }
+                    fastest-clicked => {
+                        root.fastest-clicked();
+                    }
+                    support-clicked => {
+                        root.support-clicked();
+                    }
+                }
+
+                servers := ScrollView {
+                    vertical-stretch: 1;
+                    horizontal-stretch: 1;
+                    vertical-scrollbar-policy: as-needed;
+                    horizontal-scrollbar-policy: always-off;
+                    content-height: rows.preferred-height;
+                    content-width: servers.visible-width;
+
+                    rows := VerticalLayout {
+                        x: 0px;
+                        y: 0px;
+                        width: servers.visible-width;
+                        vertical-stretch: 0;
+                        spacing: 4px;
+                        alignment: start;
+
+                        for entry in root.home: HomeRow {
+                            width: parent.width;
+                            vertical-stretch: 0;
+                            entry: entry;
+                            on: !entry.header && entry.server.id == root.selected-id;
+                            live: !entry.header && entry.server.id == root.live-id && root.phase == 2;
+                            motion: root.motion;
+                            ping-pulse: root.motion && root.checking && root.phase != 1 && root.phase != 2 && !root.disconnecting ? root.ping-wave : 0;
+                            live-pulse: root.motion && ((root.phase == 1 && entry.server.id == root.selected-id) || ((root.phase == 2 || root.disconnecting) && entry.server.id == root.live-id)) ? root.live-wave : 0;
+                            toggled => {
+                                root.section-toggled(entry.section-id);
+                            }
+                            ping => {
+                                root.section-ping(entry.section-id);
+                            }
+                            fastest => {
+                                root.section-fastest(entry.section-id);
+                            }
+                            refresh => {
+                                root.section-refresh(entry.section-id);
+                            }
+                            picked => {
+                                root.choose(entry.server.id, entry.server.name, entry.server.runs);
+                            }
+                            activate => {
+                                root.launch(entry.server.id, entry.server.name, entry.server.runs);
+                            }
+                        }
+
+                        if root.server-count == 0: Text {
+                            text: "Импортируйте подписку, чтобы увидеть серверы";
+                            color: MaterialPalette.on-surface-variant;
+                            font-size: (13px / 12px) * 1rem;
+                            wrap: word-wrap;
+                            horizontal-alignment: center;
+                        }
+                    }
+                }
+            }
+
+            if root.page == 1: ListsPage {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                subscriptions: root.sub-lines;
+                groups: root.group-lines;
+                members: root.member-lines;
+                candidates: root.candidate-lines;
+                picker: root.picker-open;
+                add-page: root.add-page;
+                add-pages: root.add-pages;
+                add-empty: root.add-empty;
+                draft-token: root.draft-token;
+                notice: root.list-notice;
+                notice-bad: root.list-notice-bad;
+                sub-refresh(id) => {
+                    root.sub-refresh(id);
+                }
+                sub-ping(id) => {
+                    root.sub-ping(id);
+                }
+                sub-fastest(id) => {
+                    root.sub-fastest(id);
+                }
+                sub-rename(id, name) => {
+                    root.sub-rename(id, name);
+                }
+                sub-delete(id) => {
+                    root.sub-delete(id);
+                }
+                sub-support(id) => {
+                    root.sub-support(id);
+                }
+                group-create(name) => {
+                    root.group-create(name);
+                }
+                group-rename(id, name) => {
+                    root.group-rename(id, name);
+                }
+                group-delete(id) => {
+                    root.group-delete(id);
+                }
+                group-toggle(id) => {
+                    root.group-toggle(id);
+                }
+                member-set(id, inside) => {
+                    root.member-set(id, inside);
+                }
+                member-filter(query) => {
+                    root.member-filter(query);
+                }
+                picker-toggle => {
+                    root.picker-toggle();
+                }
+                add-step(delta) => {
+                    root.add-step(delta);
+                }
+            }
+
+            if root.page == 2: SettingsPage {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                tun-on <=> root.tun-enabled;
+                proxy-on <=> root.proxy-enabled;
+                fastest-on <=> root.fastest-on;
+                labeled <=> root.labeled;
+                motion <=> root.motion;
+                clear-on <=> root.clear-background;
+                socks-port <=> root.socks-port;
+                theme-opacity <=> root.custom-opacity;
+                surface-opacity <=> root.custom-surface-opacity;
+                hwid-text: root.hwid-text;
+                theme-id: root.theme-id;
+                custom-bg: root.custom-bg-color;
+                custom-accent: root.custom-accent-color;
+                custom-bg-text <=> root.custom-bg-text;
+                custom-surface-text <=> root.custom-surface-text;
+                custom-text-text <=> root.custom-text-text;
+                custom-muted-text <=> root.custom-muted-text;
+                custom-accent-text <=> root.custom-accent-text;
+                custom-ink-text <=> root.custom-ink-text;
+                font-family <=> root.font-family;
+                font-size: root.font-size;
+                ui-zoom: root.ui-zoom;
+                save-settings => {
+                    root.save-settings();
+                }
+                theme-picked(id) => {
+                    if (id != "custom") {
+                        root.apply-theme(id);
+                    } else {
+                        root.theme-id = "custom";
+                    }
+                    root.theme-picked(id);
+                }
+                fastest-launch(on) => {
+                    root.fastest-launch(on);
+                }
+                density-picked(mode) => {
+                    root.density-picked(mode);
+                }
+                animations-picked(on) => {
+                    root.animations-picked(on);
+                }
+                clear-picked(on) => {
+                    root.clear-picked(on);
+                }
+                tun-picked(on) => {
+                    root.tun-picked(on);
+                }
+                proxy-picked(on) => {
+                    root.proxy-picked(on);
+                }
+                background-opacity-changed(value) => {
+                    root.background-opacity-changed(value);
+                }
+                surface-opacity-changed(value) => {
+                    root.surface-opacity-changed(value);
+                }
+                custom-edited(role, value) => {
+                    root.custom-edited(role, value);
+                }
+                font-size-picked(size) => {
+                    root.font-size-picked(size);
+                }
+                font-family-edited(name) => {
+                    root.font-family-edited(name);
+                }
+                font-file-clicked => {
+                    root.font-file-clicked();
+                }
+                font-reset-clicked => {
+                    root.font-reset-clicked();
+                }
+                zoom-picked(percent) => {
+                    root.zoom-picked(percent);
+                }
+            }
+
+            if root.page == 3: LogsPage {
+                x: 0;
+                y: 0;
+                width: 100%;
+                height: 100%;
+                log-text: root.log-text;
+                rows: root.log-rows;
+                table <=> root.log-table;
+                sort-column <=> root.log-sort-column;
+                sort-ascending <=> root.log-sort-ascending;
+                export-clicked => {
+                    root.export-logs(root.log-table);
+                }
+                sort-picked(column) => {
+                    root.sort-logs(column);
+                }
+                table-opened => {
+                    root.open-log-table();
+                }
+            }
+        }
+    }
+}

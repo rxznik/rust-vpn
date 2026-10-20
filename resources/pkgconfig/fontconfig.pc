@@ -1,0 +1,7 @@
+prefix=${pcfiledir}
+libdir=${prefix}/lib
+Name: fontconfig
+Description: fontconfig
+Version: 2.16.1
+Libs: -L${libdir} -lfontconfig
+Cflags:

@@ -1,0 +1,13 @@
+[package]
+name = "rvpn-store"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rusqlite = { version = "0.32", features = ["bundled"] }
+rvpn-model = { path = "../model" }
+serde = "1"
+serde_json = "1"
+thiserror = "2"
